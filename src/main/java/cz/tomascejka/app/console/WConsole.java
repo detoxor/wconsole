@@ -5,6 +5,8 @@ public interface WConsole {
 
 	boolean login();
 	
-	void command();
+	boolean signUp(String userName, char[] password);
+	
+	void run();
 	
 }

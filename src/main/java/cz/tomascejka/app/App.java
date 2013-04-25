@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 import cz.tomascejka.app.console.WConsole;
 import cz.tomascejka.app.console.WConsoleImpl;
+import cz.tomascejka.app.storage.UserFileRepository;
 
 public class App {
     private static final String NO_CONSOLE = "Error: Console unavailable";
@@ -27,10 +28,11 @@ public class App {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		WConsoleImpl console = new WConsoleImpl();
+		console.setRepository(new UserFileRepository("src/main/java/resources/users.txt"));
 		
-		WConsole wc = new WConsoleImpl();
-		if(wc.login()) {
-			wc.command();
+		if(console.login()) {
+			console.run();
 		}
 		
 //		Console console = System.console();
@@ -44,35 +46,35 @@ public class App {
 //		}
 	}
 
-    private static boolean login(Console console)
-    {
-        console.printf(GREETINGS);
-
-        boolean accessGranted = false;
-        int attempts = 0;
-        while (!accessGranted && attempts < 3)
-        {
-            String name = console.readLine(USER_PROMPT, new Date());
-            char[] passdata = console.readPassword(PASS_PROMPT, new Date(), name);
-            if (USER.equals(name) && PASS.equals(new String(passdata)))
-            {
-                attempts = 0;
-                accessGranted = true;
-                break;
-            }
-
-            console.printf(DENIED_ATTEMPT, ++attempts);
-        }
-
-        if (! accessGranted)
-        {
-            console.printf(ACCESS_DENIED);
-            return false;
-        }
-
-        console.printf(ACCESS_GRANTED);
-        return true;
-    }	
+//    private static boolean login(Console console)
+//    {
+//        console.printf(GREETINGS);
+//
+//        boolean accessGranted = false;
+//        int attempts = 0;
+//        while (!accessGranted && attempts < 3)
+//        {
+//            String name = console.readLine(USER_PROMPT, new Date());
+//            char[] passdata = console.readPassword(PASS_PROMPT, new Date(), name);
+//            if (USER.equals(name) && PASS.equals(new String(passdata)))
+//            {
+//                attempts = 0;
+//                accessGranted = true;
+//                break;
+//            }
+//
+//            console.printf(DENIED_ATTEMPT, ++attempts);
+//        }
+//
+//        if (! accessGranted)
+//        {
+//            console.printf(ACCESS_DENIED);
+//            return false;
+//        }
+//
+//        console.printf(ACCESS_GRANTED);
+//        return true;
+//    }	
 	
 	private static void execCommandLoop(final Console console) {
 		while (true) {

@@ -1,0 +1,4 @@
+wconsole
+========
+
+Example of console

@@ -3,12 +3,14 @@ package cz.tomascejka.app.console;
 import java.io.Console;
 import java.util.Date;
 
+import cz.tomascejka.app.domain.NullUser;
 import cz.tomascejka.app.domain.User;
 import cz.tomascejka.app.storage.Repository;
+import cz.tomascejka.app.storage.ConsoleException;
 
 public class WConsoleImpl implements WConsole {
 
-	private Console console;
+	private final Console console;
 	
 	/* moznost prevest do configuraku, pro preklady */
     private static final String TIMESTAMP = "%1$tH:%1$tM:%1$tS";
@@ -18,28 +20,30 @@ public class WConsoleImpl implements WConsole {
 	private static final String DENIED = "Access denied";
 	private static final String ALLOWED = "Access allowed";
 	private static final String ADD_USER = "Do you want to register? Please fill username and password.";
-	private static final int attemptLimits = 10;
+	private static final int ATTEMPT_LIMIT = 10;
 	
 	public WConsoleImpl() {
 		console = System.console();
-		if(console == null) throw new RuntimeException("Console is not available");
+		if(console == null) {
+			throw new ConsoleException("Console is not available");
+		}
 	}
 
 	public boolean login() {
-        console.printf("Welcome to wconsole. Fill username please.\n");
+        console.printf("Welcome to Wconsole. Fill username please.\n");
         int count = 0;
-        while (count < attemptLimits) {
-            String username = console.readLine(USER_PROMPT, new Date());
-            User user = repository.find(username);
-            if(user.getId() == null) {//uzivatel neexistuje
-            	char[] incominPassword = console.readPassword(PASS_SIGNUP, new Date());
+        while (count < ATTEMPT_LIMIT) {
+            final String username = console.readLine(USER_PROMPT, new Date()); // NOPMD by tocecz on 26.4.13 8:20
+            final User user = repository.find(username);
+            if(user.getId().equals(NullUser.NULL_ID)) {//uzivatel neexistuje
+            	final char[] incominPassword = console.readPassword(PASS_SIGNUP, new Date()); // NOPMD by tocecz on 26.4.13 8:21
             	signUp(username, incominPassword);
             } else {
-            	char[] incominPassword = console.readPassword(PASS_PROMPT, new Date());
-            	if(user.getPassword().equals(new String(incominPassword))) {
+            	final char[] incominPassword = console.readPassword(PASS_PROMPT, new Date()); // NOPMD by tocecz on 26.4.13 8:21
+            	if(user.getPassword().equals(new String(incominPassword))) { // NOPMD by tocecz on 26.4.13 8:21
             		count = 0;
             		console.printf(ALLOWED);
-            		return true;
+            		return true; // NOPMD by tocecz on 26.4.13 8:21
             	}
             }
             console.printf(DENIED, ++count);
@@ -48,9 +52,9 @@ public class WConsoleImpl implements WConsole {
         return false;
 	}
 
-	public boolean signUp(String userName, char[] password) {
+	public boolean signUp(final String userName, final char[] password) {
 		console.printf(ADD_USER);
-    	boolean state = repository.add(new User(userName, password));//is false chyba?? mozna exception
+    	final boolean state = repository.add(new User(userName, password));//is false chyba?? mozna exception
     	console.printf(state ? "User has been successfully saved" : "User has not been saved");
 		return state;
 	}
@@ -63,7 +67,7 @@ public class WConsoleImpl implements WConsole {
 	//-- IoC
 	private Repository<User> repository;
 	
-	public void setRepository(Repository<User> repository) {
+	public void setRepository(final Repository<User> repository) {
 		this.repository = repository;
 	}
 }

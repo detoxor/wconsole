@@ -4,8 +4,9 @@ import java.util.List;
 
 import cz.tomascejka.app.domain.User;
 /**
+ * Basic interface how to work with low-level data storage.
  * @author tomascejka
- * @param <E> defined specific type of persistable item  
+ * @param <E> define specific type of persistable item  
  */
 public interface Repository<E> {
 	/**
@@ -14,19 +15,19 @@ public interface Repository<E> {
 	 */
 	boolean add(E entity);
 	/**
-	 * @param unique username to find and delete entity
+	 * @param unique key to find and delete entity
 	 * return true if success
 	 */
-	boolean delete(String username);
+	boolean delete(String key);
 	/**
 	 * @return all founded entities in data storage
 	 */
 	List<E> list();
 	/**
-	 * @param unique username to find entity
+	 * @param unique key to find entity
 	 * return E given entity
 	 */
-	User find(String username);
+	User find(String key);
 	/**
 	 * delete all entities in data storage
 	 */

@@ -6,7 +6,7 @@ import java.util.Scanner;
 
 import cz.tomascejka.app.console.WConsole;
 import cz.tomascejka.app.console.WConsoleImpl;
-import cz.tomascejka.app.storage.UserFileRepository;
+import cz.tomascejka.app.storage.impl.UserFileRepository;
 
 public class App {
     private static final String NO_CONSOLE = "Error: Console unavailable";

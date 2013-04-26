@@ -1,5 +1,7 @@
 package cz.tomascejka.app.domain;
 
+import java.util.Arrays;
+
 public class User {
 
 	private Integer idUser;
@@ -13,7 +15,7 @@ public class User {
 	public User(final Integer idUser, final String username, final char[] password) {
 		this.idUser = idUser;
 		this.username = username;
-		this.password = password;
+		this.password = (password == null) ? null : Arrays.copyOf(password, password.length);
 	}	
 
 	public final String getUsername() {

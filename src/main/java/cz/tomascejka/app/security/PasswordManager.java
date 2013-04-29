@@ -18,7 +18,7 @@ public final class PasswordManager {
 	/**
 	 * It is used PBE with MD5 asd DES algoritmus
 	 * @param text to encrypt 
-	 * @return decrypted given text
+	 * @return encrypted given text
 	 */
 	public static String encrypt(final String text) {
 		final BasicTextEncryptor encryptor = new BasicTextEncryptor();

@@ -10,8 +10,8 @@ import cz.tomascejka.app.storage.Repository;
 public class CommandLogin implements Command {
 
 	private static final String WCONSOLE_PREFIX="wconsole>";
-	private static final String ACCESS_DENIED = WCONSOLE_PREFIX+"Access denied\n";
-    private static final String ATTEMPT_DENIED = WCONSOLE_PREFIX+"Wrong user name or password [%1$d]\n";
+	private static final String ACCESS_DENIED = "Access denied\n";
+    private static final String ATTEMPT_DENIED = "Wrong user name or password [%1$d]\n";
 	public static final String STORAGE_CORRUPTED = "Data storage is in inconsistent state. Contact administrator administrator@wconsole.zzz";
     private final Repository<User> repository;
 	public static final String KEY="login";
@@ -39,10 +39,10 @@ public class CommandLogin implements Command {
         		}        		
         		//najdi usera
         		final User user = repository.find(username);
-        		if(user.getPassword().equals(new String(incominPassword))) {
+        		if(new String(incominPassword).equals(user.getPassword())) {
         			count = 0;
         			isGranted=true;
-            		console.printf(WCONSOLE_PREFIX+"Access allowed\n");
+            		console.printf(WCONSOLE_PREFIX+"Access allowed. Welcome to WNconsole\n");
             		retval = username;
         			break;
             	} else {

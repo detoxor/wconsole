@@ -1,6 +1,8 @@
 package cz.tomascejka.app.console.command;
 
 import java.io.Console;
+
+import cz.tomascejka.app.storage.DataException;
 /**
  * Basic interface console command
  * @author tomascejka

@@ -1,6 +1,5 @@
 package cz.tomascejka.app.storage;
 
-import cz.tomascejka.app.console.command.DataException;
 
 public class DataAccessFailException extends DataException {
 

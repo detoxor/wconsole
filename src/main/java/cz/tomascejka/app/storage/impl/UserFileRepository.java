@@ -8,7 +8,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import cz.tomascejka.app.domain.User;
 import cz.tomascejka.app.security.PasswordManager;
@@ -29,17 +32,39 @@ public class UserFileRepository implements Repository<User> {
 	private static final String FILE_FOUND_FAIL = "File is not founded";
 	private static final String SEPARATOR = "|";
 	private static final String REGEX_SPLIT = "\\"+SEPARATOR;
-	private Integer lastId = 0;
 	private final StringBuilder sbLine;
 	private final String filePath;
-	private final List<String> cache;
+	private Map<String, String> cache;
+	private Random random;
 	/**
 	 * @param filePath to file which is used to persist users
 	 */
 	public UserFileRepository(final String filePath) {
 		this.filePath = filePath;
-		this.cache = new ArrayList<String>();
+		this.cache = new HashMap<String,String>();
 		this.sbLine = new StringBuilder();
+		this.random = new Random();
+		BufferedReader reader = null;
+		
+		//init cache and lastId
+		try {
+			final File dataSource = new File(filePath);
+			if(!dataSource.exists()) {
+				dataSource.createNewFile();
+			}			
+			reader = new BufferedReader(new FileReader(dataSource));
+			String line;
+			while((line = reader.readLine()) != null) {  // NOPMD tomascejka on 26.4.13 14:56
+				final String[] items = line.split(REGEX_SPLIT,3);
+				cache.put(items[0], items[1]);
+			}
+		} catch (FileNotFoundException e) {
+			throw new ConsoleException(FILE_FOUND_FAIL, e);
+		} catch (IOException e) {
+			throw new ConsoleException(READ_FAIL, e);
+		} finally {
+			Tool.close(reader);			
+		}		
 	}
 	/** 
 	 * Persist given user to specific file
@@ -48,24 +73,24 @@ public class UserFileRepository implements Repository<User> {
 	 * @throws ConsoleException if persist process to file fails
 	 * @return true if user is successfully persisted to file
 	 */
-	public boolean add(final User user) throws DataNotUniqueException, DataAccessFailException {
+	public void add(final User user) throws DataNotUniqueException, DataAccessFailException {
 		BufferedWriter writer = null;
 		final String userName = user.getUsername();
 		try {
-			writer = new BufferedWriter(new FileWriter(filePath, true));
 			// check unique
-			if(cache.contains(userName)) {
+			if(cache.containsValue(userName)) {
 				throw new DataNotUniqueException("Username "+userName+" is not unique!");
 			}
-			cache.add(userName);
+			int id = random.nextInt(10000);//tohle je pouze v ramci prikladu v produkci sofistikovanejsi reseni
+			cache.put(String.valueOf(id), userName);
 			//encrypt password
 			final String encrypted = PasswordManager.encrypt(user.getPassword());
 			sbLine.setLength(0);
-			sbLine.append(++lastId).append(SEPARATOR).append(userName).append(SEPARATOR).append(encrypted);
+			sbLine.append(id).append(SEPARATOR).append(userName).append(SEPARATOR).append(encrypted);
 			//write result to storage
+			writer = new BufferedWriter(new FileWriter(filePath, true));
 			writer.write(sbLine.toString());
 			writer.newLine();
-			return true;
 		} catch (IOException e) {
 			throw new ConsoleException(SAVE_FAIL, e);
 		} finally {
@@ -80,30 +105,34 @@ public class UserFileRepository implements Repository<User> {
 	 * @return true if user is correctly deleted from file
 	 * @throws DataAccessFailException 
 	 */
-	public boolean delete(final String userName) throws DataNotFoundException, DataAccessFailException {
-		if(!cache.contains(userName)) {
-			throw new DataNotFoundException("User with username "+userName+" not exist in file");
+	public void delete(final String userName) throws DataNotFoundException, DataAccessFailException {
+		if(!cache.containsValue(userName)) {
+			throw new DataNotFoundException("User with username "+userName+" not exist in file!\n");
 		}
+		
 		final File dataSource = new File(filePath);
 		if(!dataSource.exists()) {
 			throw new DataAccessFailException("File is not found");
 		}
-		boolean retval = false;
 		BufferedReader reader = null;
 		BufferedWriter writer = null;
 		File temporary = null;
 		try {
+			HashMap<String, String> tempCache = new HashMap<String, String>();
 			temporary = File.createTempFile("temporary", ".txt");
 			reader = new BufferedReader(new FileReader(dataSource));
 			writer = new BufferedWriter(new FileWriter(temporary));
 			String line;
 			while((line = reader.readLine()) != null) {  // NOPMD tomascejka tocecz on 26.4.13 14:55
 				final String[] items = line.split(REGEX_SPLIT,3);
-				if(!items[1].equals(userName)) {
+				if(!items[1].equals(userName))  {
 					writer.write(line);
 					writer.newLine();
+					tempCache.put(items[0], items[1]);
 				}
 			}
+			//safety invalidation of cache
+			cache = tempCache;
 		} catch (FileNotFoundException e) {
 			throw new ConsoleException(FILE_FOUND_FAIL, e);
 		} catch (IOException e) {
@@ -114,9 +143,7 @@ public class UserFileRepository implements Repository<User> {
 		final File old = new File(filePath);
 		if(old.delete() && temporary != null) {
 			temporary.renameTo(old);
-			retval = true;
 		}
-		return retval;
 	}
 	/** 
 	 * Read each line in file and construct and fill domain object
@@ -128,9 +155,6 @@ public class UserFileRepository implements Repository<User> {
 		final List<User> users = new ArrayList<User>();
 		try {
 			final File dataSource = new File(filePath);
-			if(!dataSource.exists()) {
-				dataSource.createNewFile();
-			}
 			reader = new BufferedReader(new FileReader(dataSource));
 			String line;
 			while((line = reader.readLine()) != null) { // NOPMD by tomascejka on 26.4.13 14:55
@@ -154,9 +178,9 @@ public class UserFileRepository implements Repository<User> {
 	 * @return user (can return NullUser - if user is not founded) domain object
 	 */
 	public User find(final String username) throws DataNotFoundException {
-//		if(!cache.contains(username)) {
-//			throw new DataNotFoundException("Username "+username+" is not exist!");
-//		}
+		if(!cache.containsValue(username)) {
+			throw new DataNotFoundException("Username "+username+" is not exist in file!\n");
+		}
 		BufferedReader reader = null;
 		User user = null;
 		try {

@@ -2,6 +2,7 @@ package cz.tomascejka.app.console.command;
 
 import java.io.Console;
 
+import cz.tomascejka.app.console.WNConsole;
 import cz.tomascejka.app.domain.User;
 import cz.tomascejka.app.storage.DataAccessFailException;
 import cz.tomascejka.app.storage.DataNotFoundException;
@@ -13,18 +14,15 @@ import cz.tomascejka.app.storage.Repository;
 public class CommandDelete implements Command {
 
 	private final Repository<User> repository;
-	private final String prefix;
-	private final String loggedUsername;
+	private String loggedUsername;
 	public static final String KEY = "delete";
 	/**
 	 * @param repository data storage implementation
 	 * @param cmdLineUser prefix for console message
 	 * @param loggedUsername actual logged user
 	 */
-	public CommandDelete(final Repository<User> repository, final String cmdLineUser, final String loggedUsername) {
+	public CommandDelete(final Repository<User> repository) {
 		this.repository = repository;
-		this.prefix = cmdLineUser;
-		this.loggedUsername = loggedUsername;
 	}
 	/**
 	 * It allows delete user from storage (except yourself)
@@ -33,14 +31,23 @@ public class CommandDelete implements Command {
 	 * @param console
 	 * @return always true
 	 */
-	public Object execute(final Console console) throws DataNotFoundException, DataAccessFailException {
+	public Object execute(final Console console) throws DataAccessFailException {
 		console.printf("Please fill username \n");
-		final String username = console.readLine(prefix+"User: ");	
-		if(username.equals(loggedUsername)) {
-			console.printf("You cannot delete yourself!\n");
-		} else {
-			repository.delete(username);
+		final String username = console.readLine(WNConsole.WNCONSOLE_PREFIX+"User: ");
+		try {
+			if(username.equals(loggedUsername)) {
+				console.printf("You cannot delete yourself!\n");
+			} else {
+				repository.delete(username);
+				console.printf("User '"+username+"' has been successfully deleted.");
+			}
+		} catch (DataNotFoundException e) {
+			console.printf("User '"+username+"' is not exist in data storage");
 		}
 		return true;
+	}
+	
+	public void setLoggedUsername(String loggedUsername) {
+		this.loggedUsername = loggedUsername;
 	}
 }

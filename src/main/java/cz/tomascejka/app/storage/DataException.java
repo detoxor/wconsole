@@ -1,4 +1,4 @@
-package cz.tomascejka.app.console.command;
+package cz.tomascejka.app.storage;
 
 public class DataException extends Exception {
 

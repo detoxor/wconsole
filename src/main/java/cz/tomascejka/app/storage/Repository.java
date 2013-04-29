@@ -12,18 +12,16 @@ public interface Repository<E> {
 	/**
 	 * @param entity to persist to data storage
 	 * @throws DataPersistException if entity cannot be persited to data storage
-	 * @throws DataNotUniqueException if new entity duplicat already existing entity in data storage
+	 * @throws DataNotUniqueException if new entity duplicated already existing entity in data storage
 	 * @throws DataAccessFailException if data storage is not available or is in inconsistent state 
-	 * return true if success
 	 */
-	boolean add(E entity) throws DataPersistException, DataNotUniqueException, DataAccessFailException;
+	void add(E entity) throws DataPersistException, DataNotUniqueException, DataAccessFailException;
 	/**
 	 * @param unique key to find and delete entity
 	 * @throws DataNotFoundException if entity is not found in data storage
 	 * @throws DataAccessFailException if data storage is not available or is in inconsistent state
-	 * @return true if success
 	 */
-	boolean delete(String key) throws DataNotFoundException, DataAccessFailException;
+	void delete(String key) throws DataNotFoundException, DataAccessFailException;
 	/**
 	 * @throws DataAccessFailException if data storage is not available or is in inconsistent state
 	 * @return all founded entities in data storage

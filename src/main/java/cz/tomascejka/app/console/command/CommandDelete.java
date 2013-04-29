@@ -39,7 +39,7 @@ public class CommandDelete implements Command {
 				console.printf("You cannot delete yourself!\n");
 			} else {
 				repository.delete(username);
-				console.printf("User '"+username+"' has been successfully deleted.");
+				console.printf("User '"+username+"' has been successfully deleted\n");
 			}
 		} catch (DataNotFoundException e) {
 			console.printf("User '"+username+"' is not exist in data storage");

@@ -81,7 +81,7 @@ public class WNConsole {
 						commands.get(CommandDelete.KEY).execute(console);
 					} else if (CommandList.KEY.equals(commandName)) {
 						commands.get(CommandList.KEY).execute(console);
-					} else if (CommandLogout.KEY.equals(commandName)) {
+					} else if (isGranted && CommandLogout.KEY.equals(commandName)) {
 						commands.get(CommandLogout.KEY).execute(console);
 						username = null;
 						isGranted = false;
@@ -91,7 +91,7 @@ public class WNConsole {
 							break;
 						}
 					}else {
-						console.printf("Uknown command:"+commandName+"\n");
+						console.printf("Uknown command:"+commandName+" or you are not logged in system!\n");
 					}
 				} catch (DataAccessFailException e) {
 					console.printf(STORAGE_CORRUPTED);

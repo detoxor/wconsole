@@ -11,23 +11,31 @@ import cz.tomascejka.app.domain.User;
 public interface Repository<E> {
 	/**
 	 * @param entity to persist to data storage
+	 * @throws DataPersistException if entity cannot be persited to data storage
+	 * @throws DataNotUniqueException if new entity duplicat already existing entity in data storage
+	 * @throws DataAccessFailException if data storage is not available or is in inconsistent state 
 	 * return true if success
 	 */
-	boolean add(E entity);
+	boolean add(E entity) throws DataPersistException, DataNotUniqueException, DataAccessFailException;
 	/**
 	 * @param unique key to find and delete entity
-	 * return true if success
+	 * @throws DataNotFoundException if entity is not found in data storage
+	 * @throws DataAccessFailException if data storage is not available or is in inconsistent state
+	 * @return true if success
 	 */
-	boolean delete(String key);
+	boolean delete(String key) throws DataNotFoundException, DataAccessFailException;
 	/**
+	 * @throws DataAccessFailException if data storage is not available or is in inconsistent state
 	 * @return all founded entities in data storage
 	 */
-	List<E> list();
+	List<E> list() throws DataAccessFailException;
 	/**
+	 * @throws DataNotFoundException if entity is not found in data storage
+	 * @throws DataAccessFailException if data storage is not available or is in inconsistent state
 	 * @param unique key to find entity
 	 * return E given entity
 	 */
-	User find(String key);
+	User find(String key) throws DataNotFoundException, DataAccessFailException;
 	/**
 	 * delete all entities in data storage
 	 */

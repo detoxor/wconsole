@@ -7,8 +7,4 @@ public class DataNotUniqueException extends RuntimeException {
 	public DataNotUniqueException(final String message) {
 		super(message);
 	}
-
-	public DataNotUniqueException(final String message, final Throwable cause) {
-		super(message, cause);
-	}
 }

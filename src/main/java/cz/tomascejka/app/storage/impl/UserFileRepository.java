@@ -10,10 +10,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import cz.tomascejka.app.domain.NullUser;
 import cz.tomascejka.app.domain.User;
 import cz.tomascejka.app.security.PasswordManager;
 import cz.tomascejka.app.storage.ConsoleException;
+import cz.tomascejka.app.storage.DataAccessFailException;
+import cz.tomascejka.app.storage.DataNotFoundException;
 import cz.tomascejka.app.storage.DataNotUniqueException;
 import cz.tomascejka.app.storage.Repository;
 import cz.tomascejka.app.util.Tool;
@@ -24,12 +25,12 @@ import cz.tomascejka.app.util.Tool;
 public class UserFileRepository implements Repository<User> {
 	
 	private static final String SAVE_FAIL = "File corrupted - user cannot be saved";
-	private static final String FAIL_LOAD = "File corrupted - users cannot be loaded";
-	private static final String FAIL_READ = "File corrupted - file cannot be readed";
+	private static final String READ_FAIL = "File corrupted - file cannot be readed";
+	private static final String FILE_FOUND_FAIL = "File is not founded";
 	private static final String SEPARATOR = "|";
 	private static final String REGEX_SPLIT = "\\"+SEPARATOR;
 	private Integer lastId = 0;
-	private final StringBuilder sb;
+	private final StringBuilder sbLine;
 	private final String filePath;
 	private final List<String> cache;
 	/**
@@ -38,7 +39,7 @@ public class UserFileRepository implements Repository<User> {
 	public UserFileRepository(final String filePath) {
 		this.filePath = filePath;
 		this.cache = new ArrayList<String>();
-		this.sb = new StringBuilder();
+		this.sbLine = new StringBuilder();
 	}
 	/** 
 	 * Persist given user to specific file
@@ -47,22 +48,22 @@ public class UserFileRepository implements Repository<User> {
 	 * @throws ConsoleException if persist process to file fails
 	 * @return true if user is successfully persisted to file
 	 */
-	public boolean add(final User user) throws DataNotUniqueException {
+	public boolean add(final User user) throws DataNotUniqueException, DataAccessFailException {
 		BufferedWriter writer = null;
+		final String userName = user.getUsername();
 		try {
 			writer = new BufferedWriter(new FileWriter(filePath, true));
 			// check unique
-			final String userName = user.getUsername();
 			if(cache.contains(userName)) {
 				throw new DataNotUniqueException("Username "+userName+" is not unique!");
 			}
 			cache.add(userName);
 			//encrypt password
 			final String encrypted = PasswordManager.encrypt(user.getPassword());
-			sb.setLength(0);
-			sb.append(++lastId).append(SEPARATOR).append(userName).append(SEPARATOR).append(encrypted);
+			sbLine.setLength(0);
+			sbLine.append(++lastId).append(SEPARATOR).append(userName).append(SEPARATOR).append(encrypted);
 			//write result to storage
-			writer.write(sb.toString());
+			writer.write(sbLine.toString());
 			writer.newLine();
 			return true;
 		} catch (IOException e) {
@@ -75,21 +76,28 @@ public class UserFileRepository implements Repository<User> {
 	 * Safety approach to delete given user from is realized as copy others users to new file and old file is deleted.
 	 * @param userName unique key to find and delete user 
 	 * @throws IndexOutOfBoundsException if line is not in consistent format id|username|password)
+	 * @throws DataNotFoundException if user is not founded
 	 * @return true if user is correctly deleted from file
+	 * @throws DataAccessFailException 
 	 */
-	public boolean delete(final String userName) {
+	public boolean delete(final String userName) throws DataNotFoundException, DataAccessFailException {
 		if(!cache.contains(userName)) {
-			throw new DataNotUniqueException("User with username "+userName+" not exist in file");
+			throw new DataNotFoundException("User with username "+userName+" not exist in file");
 		}
+		final File dataSource = new File(filePath);
+		if(!dataSource.exists()) {
+			throw new DataAccessFailException("File is not found");
+		}
+		boolean retval = false;
 		BufferedReader reader = null;
 		BufferedWriter writer = null;
-		File temp = null;
+		File temporary = null;
 		try {
-			temp = File.createTempFile("temporary", ".txt");
-			reader = new BufferedReader(new FileReader(filePath));
-			writer = new BufferedWriter(new FileWriter(temp));
+			temporary = File.createTempFile("temporary", ".txt");
+			reader = new BufferedReader(new FileReader(dataSource));
+			writer = new BufferedWriter(new FileWriter(temporary));
 			String line;
-			while((line = reader.readLine()) != null) { 
+			while((line = reader.readLine()) != null) {  // NOPMD tomascejka tocecz on 26.4.13 14:55
 				final String[] items = line.split(REGEX_SPLIT,3);
 				if(!items[1].equals(userName)) {
 					writer.write(line);
@@ -97,17 +105,18 @@ public class UserFileRepository implements Repository<User> {
 				}
 			}
 		} catch (FileNotFoundException e) {
-			throw new ConsoleException(FAIL_LOAD, e);
+			throw new ConsoleException(FILE_FOUND_FAIL, e);
 		} catch (IOException e) {
-			throw new ConsoleException(FAIL_READ, e);
+			throw new ConsoleException(READ_FAIL, e);
 		} finally {
 			Tool.close(reader, writer);			
 		}
 		final File old = new File(filePath);
-		if(old.delete() && temp != null) {
-			temp.renameTo(old);		
+		if(old.delete() && temporary != null) {
+			temporary.renameTo(old);
+			retval = true;
 		}
-		return true;
+		return retval;
 	}
 	/** 
 	 * Read each line in file and construct and fill domain object
@@ -118,17 +127,21 @@ public class UserFileRepository implements Repository<User> {
 		BufferedReader reader = null;
 		final List<User> users = new ArrayList<User>();
 		try {
-			reader = new BufferedReader(new FileReader(filePath));
+			final File dataSource = new File(filePath);
+			if(!dataSource.exists()) {
+				dataSource.createNewFile();
+			}
+			reader = new BufferedReader(new FileReader(dataSource));
 			String line;
-			while((line = reader.readLine()) != null) {
+			while((line = reader.readLine()) != null) { // NOPMD by tomascejka on 26.4.13 14:55
 				final String[] items = line.split(REGEX_SPLIT,3);
-				final User user = new User(Integer.valueOf(items[0]), items[1], null);
+				final User user = new User(Integer.valueOf(items[0]), items[1], items[2].toCharArray());
 				users.add(user);
 			}
 		} catch (FileNotFoundException e) {
-			throw new ConsoleException(FAIL_LOAD, e);
+			throw new ConsoleException(FILE_FOUND_FAIL, e);
 		} catch (IOException e) {
-			throw new ConsoleException(FAIL_READ, e);
+			throw new ConsoleException(READ_FAIL, e);
 		} finally {
 			Tool.close(reader);
 		}
@@ -137,34 +150,47 @@ public class UserFileRepository implements Repository<User> {
 	/** 
 	 * Find user by username - username is unique (only one result is returned).
 	 * @throws IndexOutOfBoundsException if line is not in consistent format id|username|password
+	 * @throws DataNotFoundException if user is not founded
 	 * @return user (can return NullUser - if user is not founded) domain object
 	 */
-	public User find(final String username) {
+	public User find(final String username) throws DataNotFoundException {
+//		if(!cache.contains(username)) {
+//			throw new DataNotFoundException("Username "+username+" is not exist!");
+//		}
 		BufferedReader reader = null;
 		User user = null;
 		try {
-			reader = new BufferedReader(new FileReader(filePath));
+			final File dataSource = new File(filePath);
+			if(!dataSource.exists()) {
+				dataSource.createNewFile();
+			}
+			reader = new BufferedReader(new FileReader(dataSource));
 			String line;
-			while((line = reader.readLine()) != null) {
+			while((line = reader.readLine()) != null) { // NOPMD by tomascejka on 26.4.13 14:55
 				final String[] items = line.split("\\"+SEPARATOR,3);
 				if(items[1].equals(username)) {
-					user = new User(Integer.valueOf(items[0]), items[1], null);
+					final String decrypt = PasswordManager.decrypt(items[2]);					
+					user = new User(Integer.valueOf(items[0]), items[1], decrypt.toCharArray());
 					break;
 				}
 			}
 		} catch (FileNotFoundException e) {
-			throw new ConsoleException(FAIL_LOAD, e);
+			throw new ConsoleException(FILE_FOUND_FAIL, e);
 		} catch (IOException e) {
-			throw new ConsoleException(FAIL_READ, e);
+			throw new ConsoleException(READ_FAIL, e);
 		} finally {
 			Tool.close(reader);
 		}
-		return user == null ? new NullUser() : user;
+		if(user == null) {
+			throw new DataNotFoundException("Username "+username+" is not exist!");
+		}
+		return user;
 	}
 	/**
 	 * Delete file
 	 */
 	public void deleteAll() {
+		cache.clear();
 		new File(filePath).delete();
 	}
 }

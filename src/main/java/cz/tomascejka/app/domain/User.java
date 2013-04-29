@@ -15,7 +15,7 @@ public class User {
 	public User(final Integer idUser, final String username, final char[] password) {
 		this.idUser = idUser;
 		this.username = username;
-		this.password = (password == null) ? null : Arrays.copyOf(password, password.length);
+		this.password = (password == null) ? "".toCharArray() : Arrays.copyOf(password, password.length);
 	}	
 
 	public final String getUsername() {
@@ -23,7 +23,7 @@ public class User {
 	}
 
 	public final String getPassword() {
-		return password == null ? null : new String(password);
+		return password == null ? "" : new String(password);
 	}
 
 	public final Integer getId() {

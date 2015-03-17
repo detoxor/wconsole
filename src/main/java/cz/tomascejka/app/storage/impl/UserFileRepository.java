@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +25,7 @@ import cz.tomascejka.app.storage.Repository;
 import cz.tomascejka.app.util.Tool;
 /**
  * Implementation of text file repository. File can be delete if data storage have to be delete.
- * @author tomascejka
+ * @author tomas.cejka
  */
 public class UserFileRepository implements Repository<User> {
 	
@@ -125,7 +127,8 @@ public class UserFileRepository implements Repository<User> {
 			String line;
 			while((line = reader.readLine()) != null) {  // NOPMD tomascejka tocecz on 26.4.13 14:55
 				final String[] items = line.split(REGEX_SPLIT,3);
-				if(!items[1].equals(userName))  {
+				if(!items[1].equals(userName)) 
+				{
 					writer.write(line);
 					writer.newLine();
 					tempCache.put(items[0], items[1]);
@@ -133,16 +136,20 @@ public class UserFileRepository implements Repository<User> {
 			}
 			//safety invalidation of cache
 			cache = tempCache;
+			Path remote = dataSource.toPath();
+			if(temporary != null) 
+			{
+				Files.delete(remote);
+				Path finalPath = Files.move(temporary.toPath(),remote);
+				System.out.println("Renamed: "+finalPath == null ? "N/A" : finalPath);
+			}
+			
 		} catch (FileNotFoundException e) {
 			throw new ConsoleException(FILE_FOUND_FAIL, e);
 		} catch (IOException e) {
 			throw new ConsoleException(READ_FAIL, e);
 		} finally {
 			Tool.close(reader, writer);			
-		}
-		final File old = new File(filePath);
-		if(old.delete() && temporary != null) {
-			temporary.renameTo(old);
 		}
 	}
 	/** 

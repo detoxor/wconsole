@@ -15,7 +15,7 @@ import cz.tomascejka.app.storage.impl.UserFileRepository;
 
 public class UserFileRepositoryTest {
 
-	private static final String FILE_PATH = "src/test/resources/users.txt";
+	private static final String FILE_PATH = "/tmp/users.txt";
 	private UserFileRepository testedObject;
 	private final User user = new User("RedDwarf",
 			"SomethingVerySecret".toCharArray());
